@@ -1,0 +1,22 @@
+{
+    "name": "Wirenook.ShapeCollector.Editor",
+    "rootNamespace": "Wirenook.ShapeCollector.Editor",
+    "references": [
+        "Wirenook.Assets.Runtime",
+        "Wirenook.Assets.Editor",
+        "nadena.dev.modular-avatar.core",
+        "Wirenook.WorldSync.Runtime",
+        "Wirenook.WorldSync.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
