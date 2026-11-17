@@ -1,0 +1,171 @@
+# Wirenook Party Tricks
+
+Things a VRChat avatar does for the people around it: a mallet that goes
+bonk, a vanishing act, a mosaic censor, and a sign for when you are busy.
+
+Package: `net.wirenook.party-tricks`. Needs the VRChat Avatars SDK 3.10.6
+or newer, [Modular Avatar](https://modular-avatar.nadena.dev/),
+[`net.wirenook.assets`](https://github.com/CassidyPrather/wirenook-assets)
+and [`net.wirenook.world-sync`](https://github.com/CassidyPrather/world-sync).
+
+## What is in it
+
+Drag a prefab onto an avatar; Modular Avatar adds its menu entry, parameter
+and animator at build time. Each trick works on its own, and
+`Wirenook Party Tricks` puts all four behind one "Tricks" menu entry.
+
+| Prefab | What it does | Synced bits | Rank cost |
+| --- | --- | --- | --- |
+| `Wirenook Bonk Hammer` | A toy mallet in the right hand. Landing its head on someone's head or body bursts into stars and goes bonk. | 2 | 1 contact, 1 audio source |
+| `Wirenook Vanishing Act` | You go up in a puff of smoke and a log is left standing where you were. You stay hidden, free to walk off, until you switch it off and come back in another puff. | 67 | 1 mesh, 1 material slot, 1 audio source, constraints and contacts (see `net.wirenook.world-sync`) |
+| `Wirenook Censor` | A mosaic over your head or your whole body: always, only in mirrors, only in photos, in either, or only in a mirror that is in a photo. | 8 | 1 mesh, 1 material slot, 1 constraint; one copy of the screen per camera while it shows |
+| `Wirenook Busy Sign` | A little window with three dots hovers by your head: you are looking at something nobody else can see. | 1 | none |
+
+The hammer, the smoke and the busy sign are toggled by scaling a bone, so
+an optimiser such as
+[Avatar Optimizer](https://vpm.anatawa12.com/avatar-optimizer/) can merge
+them into the avatar's main mesh.
+
+### Bonk hammer
+
+The mallet's head carries a contact that fires when another avatar's
+standard `Head` or `Torso` contact (VRChat gives every avatar these) enters
+it at more than 0.6 m/s; resting the mallet on someone is not a bonk. Your
+own head counts.
+
+Only the wearer's client keeps score. When it sees a hit it raises one
+synced bit for a quarter of a second, and everyone, the wearer included,
+plays the stars and the sound from that bit. That costs a bit, and it means
+nobody hears a hit you did not land or misses one you did, which each
+viewer working it out from their own copy of your arm could not promise.
+
+After placing it, fit it to the hand with
+`Tools > Wirenook > Assets > Fit Hand Grips To Selected Avatar`. The handle
+comes out of the thumb side of the fist and the head strikes the way the
+fingers point.
+
+### Vanishing act
+
+The log is dropped where you stand and its place is synced (it is a synced
+anchor from `net.wirenook.world-sync`), so someone who arrives halfway
+through the trick sees the log where you left it rather than at your feet.
+
+You are hidden by shrinking the hips bone to nothing, which takes the whole
+skinned body with it and anything worn or held. That is the one animation
+in this package that has to name part of the avatar itself: it expects the
+hips at `Armature/Hips`. For a rig that keeps them elsewhere, pass the path
+to `PartyTricksBuild.Vanish` and rebuild. Your nameplate stays; this is a
+trick, not a way to hide.
+
+### Censor
+
+`Wirenook/Censor` redraws whatever is on screen inside a rounded volume in
+square blocks 3.5 cm across, each taking the colour at its own centre. The
+background showing past you inside the volume's outline is pixelated too,
+as it would be under a broadcaster's censor bar. The grid is anchored to
+the volume's centre, so it travels with you.
+
+The volume follows your head or your hips, sized for a figure about 1.7 m
+tall with a large head; `CensorAreas` in `Editor/PartyTricksBuild.cs` holds
+the sizes. The "Whole Body" volume covers a figure standing or sitting with
+its arms down, not one with its arms spread.
+
+When it applies is read from the flags VRChat sets while it draws a mirror
+(`_VRChatMirrorMode`) or a handheld camera or screenshot
+(`_VRChatCameraMode`). Someone standing inside the volume sees nothing of
+it, so your own first-person view is never pixelated.
+
+**This is a look, not a privacy measure.** A viewer whose safety settings
+block your shaders or your animations sees you plainly. It needs a copy of
+the screen (a grab pass), which is cheap once and adds up if many avatars
+in view do it.
+
+### Busy sign
+
+VRChat does not tell an avatar when its wearer has a desktop overlay or a
+dashboard open, so the sign is one switch, `WN/Busy`, in the menu. It is an
+ordinary synced parameter, which also makes it settable over
+[OSC](https://docs.vrchat.com/docs/osc-avatar-parameters) at
+`/avatar/parameters/WN/Busy`: a program that knows when an overlay is up
+can raise the sign for you. This package does not include one.
+
+### Android and iOS
+
+In a build for Android or iOS (see `net.wirenook.assets`), the censor is
+left out: it is drawn by a custom shader, which mobile avatars may not use.
+The rest is kept, with VRChat's mobile shaders and without sound.
+
+## Limits and unknowns
+
+- Not yet run in the VRChat client. Everything here was checked in the
+  Unity editor only: that it builds, that the animations arrive in the
+  built avatar pointing at objects that exist, and, for the censor, how the
+  shader draws from a set of cameras with VRChat's flags set by hand.
+- The bonk rests on contacts and their velocity threshold, which only run
+  in the client. 0.6 m/s is a first guess.
+- Whether shrinking the hips to exactly zero upsets anything in the client
+  (inverse kinematics, PhysBones under the hips) is untried. If it does,
+  a very small scale instead of zero is the usual answer.
+- The censor has not been seen in a headset, in a real mirror or through a
+  real camera.
+- Avatar Optimizer dropped the hammer's burst animation when the burst's
+  bone was scaled only by the hit layer. Scaling it from the layer that
+  toggles the mallet as well keeps it. The cause was not tracked down.
+
+## Rebuilding the generated assets
+
+Everything under `Generated/` and `Prefabs/` is written by
+`Tools > Wirenook > Party Tricks > Rebuild`
+(`Wirenook.PartyTricks.Editor.PartyTricksBuild.Rebuild`). The models
+come from `blender/`; see `blender/README.md`.
+
+## Development
+
+Requires Unity 2022.3.22f1 (see `ProjectSettings/ProjectVersion.txt`) via a VPM
+client (prefer [ALCOM](https://vrc-get.anatawa12.com/en/alcom/)), and the
+[.NET SDK](https://dotnet.microsoft.com/download) 11 for the headless checks.
+
+The Unity project at the repository root is the development harness. It
+takes `net.wirenook.assets` and `net.wirenook.world-sync` from checkouts of
+[wirenook-assets](https://github.com/CassidyPrather/wirenook-assets) and
+[world-sync](https://github.com/CassidyPrather/world-sync) beside this one. The simplest way to get that layout is to
+work in [cass-avatar](https://github.com/CassidyPrather/cass-avatar), which
+mounts this repository and its siblings as submodules under `modules/`.
+
+```bash
+scripts/check-meta.sh          # every visible file has a committed .meta
+scripts/check-manifests.py     # package.json sanity across Packages/
+scripts/format.sh --check      # dotnet-format over the CI-visible C#
+scripts/test.sh                # headless NUnit run of Runtime/Core + Tests
+scripts/build-packages.sh      # VPM .zip + .unitypackage per package -> dist/
+```
+
+Pre-commit hook: `git config core.hooksPath .githooks`
+
+Release: bump `version` in the package's `package.json`, commit and push,
+then create a GitHub release tagged with that version. CI attaches the `.zip`
+and `.unitypackage`; the listing at
+[CassidyPrather/vpm](https://github.com/CassidyPrather/vpm) picks them up
+once this repository is in its `githubRepos`.
+
+## Legal
+
+Copyright 2026 Cassidy Prather <cassidy@wirenook.net>
+
+Everything in this repository henceforth is licensed under
+[AGPLv3](https://www.gnu.org/licenses/agpl-3.0.html) (See `LICENSE`) unless
+otherwise specified.
+
+As a special exception, the copyright holders give permission to link this
+Program with the VRChat SDK and with Unity Technologies' proprietary engine
+components, and to convey the resulting work under terms of your choice,
+provided that you also convey the Corresponding Source of this Program under
+the terms of the GNU Affero General Public License version 3 in all other
+respects. (This exception also in `LICENSE_ADDENDUM`.)
+
+## Credits
+
+Descended from https://github.com/vrchat-community/template-package
+([VRCHAT DISTRO LICENSE FILE](https://github.com/vrchat-community/template-package/blob/d9cf13fe9f56867cbf7315a4dbbf1901bc1537ec/Packages/com.vrchat.core.bootstrap/License.md))
+
+Third-party material is inventoried in [CREDITS.md](CREDITS.md).

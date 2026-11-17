@@ -1,0 +1,20 @@
+{
+  "name": "net.wirenook.party-tricks",
+  "displayName": "Wirenook Party Tricks",
+  "version": "0.1.0",
+  "unity": "2022.3",
+  "description": "Things a VRChat avatar does for the people around it: a mosaic censor, a bonk hammer, a vanishing act and more.",
+  "author": {
+    "name": "Cassidy Prather",
+    "email": "cassidy@wirenook.net",
+    "url": "https://wirenook.net"
+  },
+  "license": "AGPL-3.0-or-later",
+  "vpmDependencies": {
+    "com.vrchat.avatars": "^3.10.6",
+    "nadena.dev.modular-avatar": "^1.18.7",
+    "net.wirenook.assets": "^0.1.0",
+    "net.wirenook.world-sync": "^0.1.0"
+  },
+  "url": "https://github.com/CassidyPrather/party-tricks"
+}
