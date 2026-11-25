@@ -28,5 +28,6 @@ Material:
     - _Block: 0.035
     - _Mode: 0
     - _Show: 0
+    - _Stencil: 128
     m_Colors: []
   m_BuildTextureStacks: []

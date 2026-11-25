@@ -61,6 +61,12 @@ namespace Wirenook.PartyTricks.Editor
         /// A mosaic over the head or the whole body, with a choice of when:
         /// always, only in mirrors, only in photos, in either, or only in a
         /// mirror that is in a photo. One integer carries both choices.
+        ///
+        /// Only the avatar itself is pixelated, not the room seen past it:
+        /// the shader draws where <see cref="ToonMaterial.AvatarStencil"/>
+        /// is set, which the materials <see cref="ToonMaterial"/> configures
+        /// do as they draw. On an avatar with other materials that leaves
+        /// nothing to pixelate; see the README for what to do there.
         /// </summary>
         public static void Censor()
         {
@@ -71,6 +77,7 @@ namespace Wirenook.PartyTricks.Editor
             material.shader = shader;
             material.SetFloat("_Show", 0f);
             material.SetFloat("_Mode", 0f);
+            material.SetFloat("_Stencil", ToonMaterial.AvatarStencil);
             EditorUtility.SetDirty(material);
 
             var ball = AssetFolders.LoadOrCreate(Generated + "/censor-volume.asset", () => new Mesh());

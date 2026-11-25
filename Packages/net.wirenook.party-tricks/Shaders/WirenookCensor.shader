@@ -2,10 +2,29 @@
 // over a face, with a choice of where it applies: everywhere, only in
 // mirrors, only in photos, in either, or only in a mirror seen in a photo.
 //
-// The mesh is a rounded volume around the head or the whole body. Whatever
-// is on screen inside its outline is redrawn in square blocks, each taking
-// the colour at its own centre. That includes the background showing past
-// the avatar, which is how a censor bar behaves too.
+// The mesh is a rounded volume around the head or the whole body. Inside
+// its outline on screen, the avatar's own pixels are redrawn in square
+// blocks, each taking the colour at its block's centre. The room showing
+// past the avatar is left as it is.
+//
+// "The avatar's own pixels" are the ones whose stencil has the bit _Stencil
+// set, which the avatar's materials set as they draw (ToonMaterial.MarkStencil
+// in net.wirenook.assets does that for lilToon). The stencil remembers that
+// the avatar was drawn at a pixel, not that it is still what shows there:
+//
+// - Something drawn over the avatar afterwards, nearer than this volume,
+//   hides the mosaic, because the volume is depth tested like anything else.
+// - Something drawn over the avatar afterwards from inside the volume (a
+//   hand reaching in, anything transparent) is pixelated with it.
+// - Anything else that sets the same bit counts as the avatar wherever it
+//   shows inside the outline, at any distance behind.
+// - On an avatar that sets the bit nowhere, nothing is drawn at all. With
+//   _Stencil at 0 the test always passes and everything inside the outline
+//   is pixelated, the room included, as a censor bar would.
+//
+// A block's centre can lie off the avatar. Its pixels then take the colour
+// of whatever is behind, so the blocks along the avatar's edge look bitten
+// into and thin parts mostly disappear.
 //
 // Blocks are a fixed size in metres at the volume's centre, so they shrink
 // with distance like anything else, and the grid is anchored to that centre
@@ -23,14 +42,16 @@ Shader "Wirenook/Censor"
         _Show ("Show", Range(0, 1)) = 0
         _Mode ("When (0 always, 1 mirrors, 2 photos, 3 mirrors or photos, 4 mirrors in photos)", Float) = 0
         _Block ("Block size (m)", Float) = 0.035
+        [IntRange] _Stencil ("Only where this stencil bit is set (0: everywhere)", Range(0, 255)) = 128
     }
 
     SubShader
     {
         Tags
         {
-            // After everything an avatar is normally made of, before the
-            // screen-space overlays.
+            // After everything an avatar is normally made of, so its
+            // stencil marks are all in place, and before the screen-space
+            // overlays.
             "Queue" = "Overlay-100"
             "RenderType" = "Transparent"
             "IgnoreProjector" = "True"
@@ -45,6 +66,14 @@ Shader "Wirenook/Censor"
         ZWrite Off
         ZTest LEqual
         Blend SrcAlpha OneMinusSrcAlpha
+
+        // Read only: the one bit is compared and nothing is written.
+        Stencil
+        {
+            Ref [_Stencil]
+            ReadMask [_Stencil]
+            Comp Equal
+        }
 
         Pass
         {

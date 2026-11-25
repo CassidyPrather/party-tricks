@@ -105,7 +105,7 @@ namespace Wirenook.PartyTricks.Editor
                 var idle = layer.State("Idle", Stars("idle", AnimationCurve.Constant(0f, 1f / 60f, 0f)));
                 var landed = layer.State("Landed", Stars("landed", burst));
                 var spent = layer.State("Spent", Stars("spent", AnimationCurve.Constant(0f, 1f / 60f, 0f)));
-                WirenookSounds.PlayOnEnter(landed, WirenookSounds.SourceName, "bonk", 0.6f);
+                WirenookSounds.PlayOnEnter(landed, WirenookSounds.SourceName, "bonk");
                 idle.To(landed).IfTrue(bonk);
                 landed.To(spent).AfterTime(1f);
                 // Waits for the bit to drop, so one hit is one bonk.
@@ -179,8 +179,8 @@ namespace Wirenook.PartyTricks.Editor
                 var going = layer.State("Going", Smoke("going", billow));
                 var gone = layer.State("Gone", Smoke("gone", clear));
                 var coming = layer.State("Coming", Smoke("coming", billow));
-                WirenookSounds.PlayOnEnter(going, WirenookSounds.SourceName, "poof", 0.6f);
-                WirenookSounds.PlayOnEnter(coming, WirenookSounds.SourceName, "poof", 0.6f);
+                WirenookSounds.PlayOnEnter(going, WirenookSounds.SourceName, "poof");
+                WirenookSounds.PlayOnEnter(coming, WirenookSounds.SourceName, "poof");
                 here.To(going).IfTrue(VanishParameter);
                 going.To(gone).AfterTime(1f);
                 gone.To(coming).IfFalse(VanishParameter);

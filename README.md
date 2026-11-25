@@ -18,7 +18,7 @@ and animator at build time. Each trick works on its own, and
 | --- | --- | --- | --- |
 | `Wirenook Bonk Hammer` | A toy mallet in the right hand. Landing its head on someone's head or body bursts into stars and goes bonk. | 2 | 1 contact, 1 audio source |
 | `Wirenook Vanishing Act` | You go up in a puff of smoke and a log is left standing where you were. You stay hidden, free to walk off, until you switch it off and come back in another puff. | 67 | 1 mesh, 1 material slot, 1 audio source, constraints and contacts (see `net.wirenook.world-sync`) |
-| `Wirenook Censor` | A mosaic over your head or your whole body: always, only in mirrors, only in photos, in either, or only in a mirror that is in a photo. | 8 | 1 mesh, 1 material slot, 1 constraint; one copy of the screen per camera while it shows |
+| `Wirenook Censor` | A mosaic over your head or your whole body, and only over you: always, only in mirrors, only in photos, in either, or only in a mirror that is in a photo. Needs the avatar's materials to mark the stencil; see below. | 8 | 1 mesh, 1 material slot, 1 constraint; one copy of the screen per camera while it shows |
 | `Wirenook Busy Sign` | A little window with three dots hovers by your head: you are looking at something nobody else can see. | 1 | none |
 
 The hammer, the smoke and the busy sign are toggled by scaling a bone, so
@@ -59,11 +59,56 @@ trick, not a way to hide.
 
 ### Censor
 
-`Wirenook/Censor` redraws whatever is on screen inside a rounded volume in
-square blocks 3.5 cm across, each taking the colour at its own centre. The
-background showing past you inside the volume's outline is pixelated too,
-as it would be under a broadcaster's censor bar. The grid is anchored to
-the volume's centre, so it travels with you.
+`Wirenook/Censor` redraws you, where you show inside a rounded volume, in
+square blocks 3.5 cm across, each taking the colour at its block's centre.
+The room showing past you inside the volume's outline is left alone. The
+grid is anchored to the volume's centre, so it travels with you.
+
+**Your materials have to mark the stencil.** The shader tells you from the
+room by a stencil bit: your materials set it on every pixel they draw, and
+the mosaic is drawn only where it is set. The bit is 128
+(`ToonMaterial.AvatarStencil` in `net.wirenook.assets`), written with a
+write mask of 128 so the other seven bits stay as they were. The materials
+`net.wirenook.assets` generates do this already: an avatar built on
+`ToonMaterial.Configure`, and every wirenook prop except the ones made of
+light. On any other avatar the censor draws nothing until you do one of
+two things:
+
+- Set the stencil on each of the avatar's materials: Ref 128, Write Mask
+  128, Comp Always, Pass Replace, and the same for the outline if the
+  shader has a separate one. lilToon and Poiyomi both have these settings;
+  `ToonMaterial.MarkStencil` sets them on a lilToon material from code.
+- Or set `_Stencil` to 0 on `Generated/censor.mat`. The test then always
+  passes and everything inside the volume is pixelated, room included, as
+  under a broadcaster's censor bar. This is how the censor worked before.
+
+What follows from doing it with the stencil:
+
+- **What is drawn over you later.** The stencil records that you were
+  drawn at a pixel, not that you are still what shows there. Something
+  nearer than the volume hides the mosaic, because the volume is depth
+  tested. Something inside the volume, drawn after you (a friend's hand in
+  front of your face, anything transparent, your own beam or halo), is
+  pixelated where it overlaps you and sharp where it does not. Whether an
+  opaque thing counts as "after you" is up to the order the renderer picks.
+- **Your outline stays sharp.** A block whose centre is off you gives your
+  pixels in it the colour of whatever is behind. Blocks along your edge
+  look bitten into, and thin parts (strands of hair, fingers) mostly
+  disappear into the background.
+- **Anything else that sets bit 128** looks like you to the shader:
+  another avatar in these same materials, or one whose own stencil effect
+  writes 128 to 255 with a full write mask. Where it shows inside the
+  volume's outline, at any distance behind you, it is pixelated too. That
+  is the old behaviour, confined to those pixels.
+- **A stencil effect that reads all eight bits** (a world's portal, another
+  avatar's) sees its value changed by 128 where you are drawn over it and
+  will usually skip those pixels. Where such an effect draws over you and
+  clears the bit, the mosaic is missing.
+- **Mirrors and cameras** draw the scene again into a picture of their
+  own, with their own stencil, so the same thing happens there as on
+  screen, provided that picture has a stencil buffer. If VRChat renders one
+  without, the test passes everywhere and the censor pixelates the whole
+  volume in that view. This has not been checked in the client.
 
 The volume follows your head or your hips, sized for a figure about 1.7 m
 tall with a large head; `CensorAreas` in `Editor/PartyTricksBuild.cs` holds
@@ -73,7 +118,9 @@ its arms down, not one with its arms spread.
 When it applies is read from the flags VRChat sets while it draws a mirror
 (`_VRChatMirrorMode`) or a handheld camera or screenshot
 (`_VRChatCameraMode`). Someone standing inside the volume sees nothing of
-it, so your own first-person view is never pixelated.
+it, so your own first-person view is never pixelated. The stencil does
+not come into this: "In Mirrors", "In Photos" and the other choices work as
+they did.
 
 **This is a look, not a privacy measure.** A viewer whose safety settings
 block your shaders or your animations sees you plainly. It needs a copy of
@@ -107,7 +154,11 @@ The rest is kept, with VRChat's mobile shaders and without sound.
   (inverse kinematics, PhysBones under the hips) is untried. If it does,
   a very small scale instead of zero is the usual answer.
 - The censor has not been seen in a headset, in a real mirror or through a
-  real camera.
+  real camera. That it now covers only the avatar was type-checked and
+  reasoned through, not rendered: the editor preview has to be run again,
+  and whether VRChat's mirrors and cameras keep a stencil buffer, and how
+  other avatars' stencil effects mix with it, can only be seen in the
+  client.
 - Avatar Optimizer dropped the hammer's burst animation when the burst's
   bone was scaled only by the hit layer. Scaling it from the layer that
   toggles the mallet as well keeps it. The cause was not tracked down.
