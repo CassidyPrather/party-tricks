@@ -4,10 +4,11 @@ Lay out a collect-the-shapes course in any VRChat world, from your avatar,
 for whoever is in the instance. Inspired by crappy VRChat games everywhere.
 
 The game: somewhere there is a gate. To open it, a player has to walk into
-a blue triangle, then a square, then a circle, in that order, and only the
-next one is ever on show. A sign says which shape is next, for anyone who
-is stuck. When the circle is taken the gate goes away. The gate has no
-collider, so nothing stops anyone walking through it; you can pretend it
+a blue pyramid, then a cube, then a ball, in that order, and only the next
+one is ever on show. A sign says which shape is next, as a triangle, a
+square or a circle, for anyone who is stuck, and so does a lantern on top
+of each gatepost. When the ball is taken the gate goes away. The gate has
+no collider, so nothing stops anyone walking through it; you can pretend it
 does, if that makes you happy.
 
 Package: `net.wirenook.shape-collector`. Needs the VRChat Avatars SDK
@@ -26,8 +27,8 @@ Drag `Prefabs/Wirenook Shape Collector.prefab` onto an avatar. It adds a
 
 | Entry | What it does |
 | --- | --- |
-| Place ▸ Triangle, Square, Circle | Puts that shape a step in front of you at chest height, where it hovers. |
-| Place ▸ Gate Left, Gate Right | Puts one end of the gate on the ground in front of you. Bars of light fill the gap between the two, however wide. |
+| Place ▸ Triangle, Square, Circle | Puts that shape (the pyramid, the cube or the ball) a step in front of you at chest height, where it hovers and turns. |
+| Place ▸ Gate Left, Gate Right | Puts one gatepost on the ground in front of you. Once both are down, a lattice of fangs and braces fills the gap between them, however wide. |
 | Place ▸ Sign | Puts the sign that shows the next shape on the ground in front of you. |
 | Open Course | Shows the course to the instance and starts the game. Until then only you see what you have placed. |
 | Start Over | Puts the first shape back. |
@@ -59,11 +60,36 @@ the details.
 each thing that moves by itself, each bone held on its slot by a
 constraint. Things left in the world cannot be part of the avatar's own
 mesh, which is culled with the avatar, and as separate meshes they would be
-eleven. The gate's five bars are held at even steps between the two posts,
-which is what makes the gate fit any gap. The mesh's bounds are the bus's
-whole range, so it is drawn wherever its bones are; the object those bounds
-hang from rests at no size, so they are a point until there is a course to
-show.
+seven. The mesh's bounds are the bus's whole range, so it is drawn wherever
+its bones are; the object those bounds hang from rests at no size, so they
+are a point until there is a course to show.
+
+**A gate of any width.** The gate is two posts and a lattice between them:
+an upper jaw of fangs hung from a beam, a lower jaw standing on a rail, and
+braces and two lines of light behind. Nothing holds the lattice in place
+and nothing measures the gap. Each post has two bones under it, one for
+each jaw, and every vertex of the lattice is weighted partly to a bone
+under one post and partly to its partner under the other, which puts it
+that share of the way across wherever the posts are. A fang's vertices all
+have one share, so it keeps its shape and only its place changes; a beam's
+two ends have different shares, so it stretches. Scaling both bones of a
+pair to nothing leaves the lattice no area, which is how it stays out of
+sight until both posts are down.
+
+The posts stand along the world's axes and do not turn to face along the
+gate, so only the lattice's upright faces look the same whichever way the
+gate runs. That is why the beams are flat strips with crossed plates
+instead of boxes, and the fangs are turned shapes.
+
+While the gate stands, the two jaws rise and fall a few centimetres against
+each other, a quarter of a beat apart at their two ends, and the crown of
+spikes on each post turns slowly and swells, one crown clockwise and the
+other not. All of that is animation on bones under the posts; the posts
+themselves are held by constraints and cannot be animated.
+
+Each post's lantern shows the sign's triangle, square or circle on all four
+of its sides, because a post has no front. It does not show the sign's
+tick: by the time the gate is open the posts are gone.
 
 **Keeping score.** The wearer's client is the referee. Each shape carries a
 contact that feels the standard `Head`, `Torso`, `Hand`, `Foot` and
@@ -77,8 +103,9 @@ on every client when that number goes up.
 | --- | --- |
 | Synced bits | 66: the bus's 57, one for "open", eight for the count |
 | Meshes | 1 skinned, 1 material slot. A third skinned mesh ranks an avatar Medium on PC |
-| Bones | 19 |
-| Constraints | 16: eleven hold the bones, five are the bus |
+| Triangles | 1,454 |
+| Bones | 26 |
+| Constraints | 11: six hold the bones, five are the bus |
 | Contacts | 3 that feel other avatars and 4 on the bus, all local-only |
 | Audio sources | 1 |
 
@@ -94,10 +121,23 @@ Checked in the Unity editor:
   viewer at several update rates, with synced floats jumping and easing,
   and clears them again, for both ways VRChat might round a number.
 - That the prefab builds onto an avatar and every animation arrives at an
-  object that exists.
+  object that exists. This was done for the gate of five bars that came
+  before the lattice, and has to be done again for the lattice, the
+  lanterns and the crowns.
+
+Checked in Blender only, by posing the model's bones:
+
+- That the lattice fills the gap between the posts at 2.4 m and at 8 m, and
+  with the gate running along, across and diagonally to the way it was
+  modelled, and that it has no area when both bones of each pair are scaled
+  to nothing.
 
 Not checked, because only the client can:
 
+- The solid shapes, the lattice, its movement, the crowns and the lanterns
+  have not been seen in VRChat at all. In particular nothing has shown
+  that Avatar Optimizer keeps the curves on the bones under the posts
+  (see `SKILL.md`), or how the client shades the lattice's flat strips.
 - Everything the editor check stands in for: that contacts read positions
   in metres, that constraints with two weighted sources sit at their
   weighted average, that parameter drivers copy as assumed on other
@@ -106,7 +146,8 @@ Not checked, because only the client can:
 - Whether the client draws a mesh with bounds a kilometre across, and what
   it costs if it does.
 - The sign and the shapes face along the world's axes, not towards anyone.
-  The shapes turn; the sign is drawn on both faces.
+  The shapes turn; the sign is drawn on both faces; the lanterns show
+  their picture on all four sides.
 
 Not built: the notes for this package also ask for an "omen" only some
 players can see. It is not here.

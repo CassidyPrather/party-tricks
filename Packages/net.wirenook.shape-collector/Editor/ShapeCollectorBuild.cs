@@ -30,6 +30,12 @@ namespace Wirenook.ShapeCollector.Editor
     /// avatar's own mesh, and one mesh with a bone per thing is one mesh and
     /// one material slot however many things there are.
     ///
+    /// The gate is two posts and a lattice between them. The lattice is
+    /// skinned to pairs of bones, one of each pair under each post, every
+    /// piece of it weighted to sit a fixed share of the way from one to the
+    /// other. It fills the gap however wide that is, and nothing here has
+    /// to hold it there or know the width.
+    ///
     /// The wearer's client keeps score. Contacts on the shapes feel any
     /// avatar's standard body contacts, and the count of shapes taken is one
     /// synced number that every client shows the course from.
@@ -63,7 +69,27 @@ namespace Wirenook.ShapeCollector.Editor
         private const int PostB = 5;
         private const int Sign = 6;
         public const int Slots = 6;
-        private const int Bars = 5;
+
+        private static readonly string[] Ends = { "A", "B" };
+
+        /// <summary>
+        /// The pairs of bones the gate's lattice hangs between: an upper jaw
+        /// and a lower one. <c>SPANS</c> in blender/build_props.py has the
+        /// same names.
+        /// </summary>
+        private static readonly string[] Spans = { "Curtain", "Teeth" };
+
+        /// <summary>
+        /// How far each end of each jaw rises and falls. The model leaves
+        /// more room than twice this between one jaw's tips and the other's
+        /// beam.
+        /// </summary>
+        private const float BobMetres = 0.04f;
+        private const float BobSeconds = 6f;
+
+        /// <summary>One turn of the crown on a post. Its swelling fits a whole number of times into this.</summary>
+        private const float CrownSeconds = 16f;
+        private const float CrownPulseSeconds = 4f;
 
         private static string Hit(int shape) => "SC/Hit" + shape;
 
@@ -99,14 +125,6 @@ namespace Wirenook.ShapeCollector.Editor
                 Hold(Bone("PostA"), bus.Pose(PostA));
                 Hold(Bone("PostB"), bus.Pose(PostB));
                 Hold(Bone("Sign"), bus.Pose(Sign));
-                for (var bar = 1; bar <= Bars; bar++)
-                {
-                    // Evenly between the posts, wherever the posts are.
-                    var share = (float)bar / (Bars + 1);
-                    var between = Constrain<VRCPositionConstraint>(Bone("Bar" + bar).gameObject);
-                    between.AddSource(new VRCConstraintSource { SourceTransform = bus.Pose(PostA), Weight = 1f - share });
-                    between.AddSource(new VRCConstraintSource { SourceTransform = bus.Pose(PostB), Weight = share });
-                }
 
                 // The mesh is drawn wherever its bones are, which can be
                 // anywhere in the world, so its bounds are the bus's whole
@@ -166,14 +184,63 @@ namespace Wirenook.ShapeCollector.Editor
                 }
 
                 var shut = Less(Next, ShapeNames.Length);
-                Shown(fx, "SC Gate Left", new[] { Path("PostA") }, When(new[] { Is(bus.Placed(PostA)) }, shut));
-                Shown(fx, "SC Gate Right", new[] { Path("PostB") }, When(new[] { Is(bus.Placed(PostB)) }, shut));
-                Shown(fx, "SC Gate Bars", Enumerable.Range(1, Bars).Select(bar => Path("Bar" + bar)).ToList(),
-                    When(new[] { Is(bus.Placed(PostA)), Is(bus.Placed(PostB)) }, shut));
+                for (var end = 0; end < Ends.Length; end++)
+                {
+                    var letter = Ends[end];
+                    var crown = Path("Crown" + letter);
+                    // Later layers unfold the lattice and the lantern's
+                    // pictures. This one, which shows the post they are
+                    // under, holds them folded as well: Avatar Optimizer
+                    // has dropped the curves of a bone that only a later
+                    // layer scaled.
+                    var folded = Spans.Select(span => Path(span + letter))
+                        .Concat(ShapeNames.Select(shape => Path("Lamp" + shape + letter))).ToList();
+                    // The crowns turn against each other.
+                    var turn = end == 0 ? 360f : -360f;
+                    Shown(fx, end == 0 ? "SC Gate Left" : "SC Gate Right", new[] { Path("Post" + letter) },
+                        When(new[] { Is(bus.Placed(end == 0 ? PostA : PostB)) }, shut), (clip, phase) =>
+                        {
+                            foreach (var path in folded) PopToggle.Scale(clip, path, AnimationCurve.Constant(0f, 1f / 60f, 0f));
+                            if (phase != "on") return;
+                            clip.Constant(crown, typeof(Transform), "localEulerAnglesRaw.x", 0f)
+                                .Curve(crown, typeof(Transform), "localEulerAnglesRaw.y", AnimationCurve.Linear(0f, 0f, CrownSeconds, turn))
+                                .Constant(crown, typeof(Transform), "localEulerAnglesRaw.z", 0f);
+                            PopToggle.Scale(clip, crown, Wave(1.06f, 0.06f, CrownPulseSeconds, 0.75f, CrownSeconds));
+                            clip.Loop();
+                        });
+                }
+
+                // The lattice, once there are two posts for it to hang
+                // between. Each end of each jaw rises and falls a quarter of
+                // a beat after the last, so the jaws work against each other
+                // and a slow wave runs along them.
+                var jaws = Spans.SelectMany(span => Ends.Select(letter => Bone(span + letter))).ToList();
+                Shown(fx, "SC Gate Bars", jaws.Select(jaw => FeaturePrefab.PathTo(root, jaw)).ToList(),
+                    When(new[] { Is(bus.Placed(PostA)), Is(bus.Placed(PostB)) }, shut), (clip, phase) =>
+                    {
+                        if (phase != "on" && phase != "appear") return;
+                        for (var jaw = 0; jaw < jaws.Count; jaw++)
+                        {
+                            var path = FeaturePrefab.PathTo(root, jaws[jaw]);
+                            var rest = jaws[jaw].localPosition;
+                            var bob = Wave(rest.y, BobMetres, BobSeconds, jaw / (float)jaws.Count, BobSeconds);
+                            // It arrives where its bobbing starts.
+                            if (phase == "appear") bob = AnimationCurve.Constant(0f, 1f / 60f, bob.Evaluate(0f));
+                            clip.Constant(path, typeof(Transform), "m_LocalPosition.x", rest.x)
+                                .Curve(path, typeof(Transform), "m_LocalPosition.y", bob)
+                                .Constant(path, typeof(Transform), "m_LocalPosition.z", rest.z);
+                        }
+
+                        if (phase == "on") clip.Loop();
+                    });
+
                 Shown(fx, "SC Sign", new[] { Path("Sign") }, When(new[] { Is(bus.Placed(Sign)) }));
                 for (var shape = 1; shape <= ShapeNames.Length; shape++)
                 {
-                    Shown(fx, "SC Sign " + ShapeLabels[shape - 1], new[] { Path("Sign" + ShapeNames[shape - 1]) },
+                    // The sign's picture, and the same one in the lantern on each post.
+                    var name = ShapeNames[shape - 1];
+                    Shown(fx, "SC Sign " + ShapeLabels[shape - 1],
+                        new[] { Path("Sign" + name) }.Concat(Ends.Select(letter => Path("Lamp" + name + letter))).ToList(),
                         new List<List<Condition>> { new List<Condition> { Equal(Next, shape - 1) } });
                 }
 
@@ -221,7 +288,7 @@ namespace Wirenook.ShapeCollector.Editor
                 for (var count = 1; count <= ShapeNames.Length; count++)
                 {
                     var rang = chime.State("Rang " + count);
-                    WirenookSounds.PlayOnEnter(rang, WirenookSounds.SourceName, "collect", 0.6f);
+                    WirenookSounds.PlayOnEnter(rang, WirenookSounds.SourceName, "collect");
                     chime.Any(rang).Equal(Next, count).IfTrue(Live);
                 }
 
@@ -291,6 +358,28 @@ namespace Wirenook.ShapeCollector.Editor
                 foreach (var path in paths.Skip(1)) PopToggle.Scale(clip, path, scale);
                 extras?.Invoke(clip, phase);
             });
+        }
+
+        /// <summary>
+        /// A sine about <paramref name="centre"/>, <paramref name="seconds"/>
+        /// long and keyed with its own slopes, so that a clip which holds a
+        /// whole number of periods loops without a seam.
+        /// </summary>
+        /// <param name="turns">Where in its period it starts, as a fraction of one.</param>
+        private static AnimationCurve Wave(float centre, float swing, float period, float turns, float seconds)
+        {
+            const int KeysPerPeriod = 8;
+            var count = Mathf.Max(1, Mathf.RoundToInt(seconds / period * KeysPerPeriod));
+            var keys = new Keyframe[count + 1];
+            for (var key = 0; key <= count; key++)
+            {
+                var time = seconds * key / count;
+                var angle = 2f * Mathf.PI * (time / period + turns);
+                var slope = swing * 2f * Mathf.PI / period * Mathf.Cos(angle);
+                keys[key] = new Keyframe(time, centre + swing * Mathf.Sin(angle), slope, slope);
+            }
+
+            return new AnimationCurve(keys);
         }
 
         /// <summary>Makes a transition fire when every condition of any one set holds.</summary>

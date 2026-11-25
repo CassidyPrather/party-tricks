@@ -38,6 +38,17 @@ scripts/test.sh                # headless NUnit run of Runtime/Core + Tests
 scripts/build-packages.sh      # VPM .zip + .unitypackage per package -> dist/
 ```
 
+## The Course Model
+
+One skinned mesh, `Models/shapes.fbx`: 1,454 triangles (budget 1,500 in `build_props.py`), 26 bones, one material slot. 11 constraints: six hold `Tri`, `Square`, `Circle`, `PostA`, `PostB` and `Sign` on the bus's slots, five are the bus. None of the solid shapes, the gate's lattice, its animation or the posts' lanterns has been seen in VRChat.
+
+- **The gate's lattice is skinned between pairs of bones, `CurtainA`/`CurtainB` and `TeethA`/`TeethB`, one of each pair under each post.** A vertex's share of the `B` bone is how far across the gap it sits. No constraint and no measure of the width. `SPANS` in `build_props.py` and `Spans` in `ShapeCollectorBuild.cs` name the pairs; keep them in step. `blender/README.md` has the modelling rules.
+- **`PostA` and `PostB` carry locked constraints and only move, never turn.** Animate bones under them, not them. Geometry that must look right whichever way the gate runs is upright strips or turned about the upright.
+- **The lattice is hidden by scaling all four of its bones to zero together** (`SC Gate Bars`). Anything in it weighted to a fifth bone would be left behind as a sliver.
+- **A bone under a post that a later layer scales is also scaled by the layer that shows the post** (`SC Gate Left`/`Right` hold the lattice bones and the lantern's `Lamp*` bones at zero; `SC Gate Bars` and `SC Sign *` override). Avatar Optimizer dropped such curves in party-tricks. Unverified here: check a built avatar with `FxProbe.Clips`.
+- **The lanterns show the sign's triangle, square and circle but not its tick.** A post is gone by the time the tick would show.
+- **The shared prop kit allows one bone per vertex.** `build_props.py` replaces `wirenook_props.assemble` and `_validate_skin` to get shared weights through; a change to either in wirenook-assets has to be carried over.
+
 ## The SDK Boundary
 
 - The VRChat SDK and Unity are proprietary; the repository must stay clonable,
