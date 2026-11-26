@@ -1,8 +1,9 @@
 # Wirenook Party Tricks
 
 Things a VRChat avatar does for the people around it: a mallet that goes
-bonk, a vanishing act, a mosaic censor, a sign for when you are busy, and
-a crash for when you are away.
+bonk, a vanishing act, a mosaic censor, a sign for when you are busy, a
+crash for when you are away, and a collect-the-shapes course to lay out
+wherever you are.
 
 Package: `net.wirenook.party-tricks`. Needs the VRChat Avatars SDK 3.10.6
 or newer, [Modular Avatar](https://modular-avatar.nadena.dev/),
@@ -219,6 +220,155 @@ The rest is kept, with VRChat's mobile shaders and without sound. Of the
 away feature that leaves the locked body: the glitch and the window are
 the shader's, and the window is taken out of the mesh altogether there.
 
+## Shape collector
+
+`Wirenook Shape Collector` lays out a collect-the-shapes course in any VRChat world, from your avatar,
+for whoever is in the instance. Inspired by crappy VRChat games everywhere. It was a package of its own
+(`net.wirenook.shape-collector`) until it was folded in here; a world can build the same course into its
+scene with `ShapeCourse` in [`net.wirenook.contacts`](https://github.com/CassidyPrather/contacts).
+It is not part of the Tricks set.
+
+The game: somewhere there is a gate. To open it, a player has to walk into
+a blue pyramid, then a cube, then a ball, in that order, and only the next
+one is ever on show. A sign says which shape is next, as a triangle, a
+square or a circle, for anyone who is stuck, and so does a lantern on top
+of each gatepost. When the ball is taken the gate goes away. The gate has
+no collider, so nothing stops anyone walking through it; you can pretend it
+does, if that makes you happy.
+
+### Using the shape collector
+
+Drag `Prefabs/Wirenook Shape Collector.prefab` onto an avatar. It adds a
+"Shape Course" menu:
+
+| Entry | What it does |
+| --- | --- |
+| Place ▸ Triangle, Square, Circle | Puts that shape (the pyramid, the cube or the ball) a step in front of you at chest height, where it hovers and turns. |
+| Place ▸ Gate Left, Gate Right | Puts one gatepost on the ground in front of you. Once both are down, a lattice of fangs and braces fills the gap between them, however wide. |
+| Place ▸ Sign | Puts the sign that shows the next shape on the ground in front of you. |
+| Open Course | Shows the course to the instance and starts the game. Until then only you see what you have placed. |
+| Start Over | Puts the first shape back. |
+| Clear All | Un-places everything. |
+
+Walk to where a thing should go, place it, and go on to the next. Placing a
+thing again moves it. Each takes about a second, during which it is being
+measured; stand still for it. When the course looks right, open it.
+
+The layout is kept with the avatar: it is still there the next time you
+wear it, in the same places in the same world. In another world the same
+coordinates mean somewhere else, so clear it and lay it out again.
+
+### How the shape collector works
+
+**Six places for the price of one.** The three shapes, the two ends of the
+gate and the sign are six positions in the world that every player has to
+agree on, including players who arrive halfway through. A synced anchor
+from `net.wirenook.world-sync` costs 66 synced bits, and an avatar has 256,
+so six of them do not fit. The course rides an anchor bus instead: one
+measuring rig, one synced channel the size of one position, and the six
+layouts read out over it in turn, round and round. Every other client
+copies what it hears into its own copy of each slot. That is 57 bits for
+any number of places, and a late arrival has the whole course after one
+turn of the broadcast, about six seconds here. The world-sync README has
+the details.
+
+**One mesh.** Everything on show is a single skinned mesh with a bone for
+each thing that moves by itself, each bone held on its slot by a
+constraint. Things left in the world cannot be part of the avatar's own
+mesh, which is culled with the avatar, and as separate meshes they would be
+seven. The mesh's bounds are the bus's whole range, so it is drawn wherever
+its bones are; the object those bounds hang from rests at no size, so they
+are a point until there is a course to show.
+
+**A gate of any width.** The gate is two posts and a lattice between them:
+an upper jaw of fangs hung from a beam, a lower jaw standing on a rail, and
+braces and two lines of light behind. Nothing holds the lattice in place
+and nothing measures the gap. Each post has two bones under it, one for
+each jaw, and every vertex of the lattice is weighted partly to a bone
+under one post and partly to its partner under the other, which puts it
+that share of the way across wherever the posts are. A fang's vertices all
+have one share, so it keeps its shape and only its place changes; a beam's
+two ends have different shares, so it stretches. Scaling both bones of a
+pair to nothing leaves the lattice no area, which is how it stays out of
+sight until both posts are down.
+
+The posts stand along the world's axes and do not turn to face along the
+gate, so only the lattice's upright faces look the same whichever way the
+gate runs. That is why the beams are flat strips with crossed plates
+instead of boxes, and the fangs are turned shapes.
+
+While the gate stands, the two jaws rise and fall a few centimetres against
+each other, a quarter of a beat apart at their two ends, and the crown of
+spikes on each post turns slowly and swells, one crown clockwise and the
+other not. All of that is animation on bones under the posts; the posts
+themselves are held by constraints and cannot be animated.
+
+Each post's lantern shows the sign's triangle, square or circle on all four
+of its sides, because a post has no front. It does not show the sign's
+tick: by the time the gate is open the posts are gone.
+
+**Keeping score.** The wearer's client is the referee. Each shape carries a
+contact that feels the standard `Head`, `Torso`, `Hand`, `Foot` and
+`Finger` contacts VRChat gives every avatar, the wearer's included. Only
+the shape that is next counts. The number of shapes taken is one synced
+integer, and every client shows the course from it: which shape is out,
+whether the gate stands, what the sign says. The one sound, a chime, plays
+on every client when that number goes up.
+
+| | |
+| --- | --- |
+| Synced bits | 66: the bus's 57, one for "open", eight for the count |
+| Meshes | 1 skinned, 1 material slot. A third skinned mesh ranks an avatar Medium on PC |
+| Triangles | 1,454 |
+| Bones | 26 |
+| Constraints | 11: six hold the bones, five are the bus |
+| Contacts | 3 that feel other avatars and 4 on the bus, all local-only |
+| Audio sources | 1 |
+
+### What has and has not been checked of the shape collector
+
+Checked in the Unity editor:
+
+- The bus, by `Tools > Wirenook > Shape Collector > Verify`
+  (`AnchorBusCheck` in world-sync). It runs two copies of the generated
+  animator, one as the wearer's client and one as a viewer who arrives
+  after everything is placed, standing in for VRChat's parameter drivers,
+  contacts and network. It places all six slots, broadcasts them to the
+  viewer at several update rates, with synced floats jumping and easing,
+  and clears them again, for both ways VRChat might round a number.
+- That the prefab builds onto an avatar and every animation arrives at an
+  object that exists. This was done for the gate of five bars that came
+  before the lattice, and has to be done again for the lattice, the
+  lanterns and the crowns.
+
+Checked in Blender only, by posing the model's bones:
+
+- That the lattice fills the gap between the posts at 2.4 m and at 8 m, and
+  with the gate running along, across and diagonally to the way it was
+  modelled, and that it has no area when both bones of each pair are scaled
+  to nothing.
+
+Not checked, because only the client can:
+
+- The solid shapes, the lattice, its movement, the crowns and the lanterns
+  have not been seen in VRChat at all. In particular nothing has shown
+  that Avatar Optimizer keeps the curves on the bones under the posts
+  (see `SKILL.md`), or how the client shades the lattice's flat strips.
+- Everything the editor check stands in for: that contacts read positions
+  in metres, that constraints with two weighted sources sit at their
+  weighted average, that parameter drivers copy as assumed on other
+  people's clients, and that avatar parameters arrive together.
+- The game itself: walking into a shape, the sound, how it feels.
+- Whether the client draws a mesh with bounds a kilometre across, and what
+  it costs if it does.
+- The sign and the shapes face along the world's axes, not towards anyone.
+  The shapes turn; the sign is drawn on both faces; the lanterns show
+  their picture on all four sides.
+
+Not built: the notes for this package also ask for an "omen" only some
+players can see. It is not here.
+
+
 ## Limits and unknowns
 
 - Not yet run in the VRChat client. Everything here was checked in the
@@ -253,8 +403,11 @@ the shader's, and the window is taken out of the mesh altogether there.
 
 Everything under `Generated/` and `Prefabs/` is written by
 `Tools > Wirenook > Party Tricks > Rebuild`
-(`Wirenook.PartyTricks.Editor.PartyTricksBuild.Rebuild`). The models
-come from `blender/`; see `blender/README.md`.
+(`Wirenook.PartyTricks.Editor.PartyTricksBuild.Rebuild`), and the shape
+collector's by `Tools > Wirenook > Shape Collector > Rebuild`
+(`Wirenook.ShapeCollector.Editor.ShapeCollectorBuild.Rebuild`). The models
+come from `blender/` and, for the shape collector, `blender/shapes/`; each
+has a README.
 
 ## Development
 
