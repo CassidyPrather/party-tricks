@@ -120,7 +120,7 @@ namespace Wirenook.ShapeCollector.World.Editor
     /// package lays out from a menu, here built into a scene from editor code.
     ///
     /// There is no behaviour of its own behind it. Each shape is a skill check
-    /// (net.wirenook.skill-checks) that latches at a touch and needs, besides a contact, the shape
+    /// (the skill checks of net.wirenook.contacts) that latches at a touch and needs, besides a contact, the shape
     /// before it to be complete; what is shown follows from those checks. So it is synced, and
     /// right for late joiners, the way every skill check is.
     ///

@@ -17,7 +17,7 @@ targets, and each side compiles only where what it needs is installed:
 | Side | Folder | Needs |
 | --- | --- | --- |
 | On an avatar: the course laid out from a menu | `Editor/` (`ShapeCollectorBuild`), `Generated/`, `Models/`, `Prefabs/` | VRChat Avatars SDK 3.10.6 or newer, [Modular Avatar](https://modular-avatar.nadena.dev/), [`net.wirenook.assets`](https://github.com/CassidyPrather/wirenook-assets), [`net.wirenook.world-sync`](https://github.com/CassidyPrather/world-sync) |
-| In a world: the course built into the scene | `Editor/World/` (`ShapeCourse`) | VRChat Worlds SDK 3.7 or newer, [`net.wirenook.skill-checks`](https://github.com/CassidyPrather/skill-checks) |
+| In a world: the course built into the scene | `Editor/World/` (`ShapeCourse`) | VRChat Worlds SDK 3.7 or newer, [`net.wirenook.contacts`](https://github.com/CassidyPrather/contacts) (for its skill checks) |
 
 `package.json` therefore depends on `com.vrchat.base` alone: the Avatars
 and Worlds SDKs cannot share a project, so a package for both cannot
@@ -55,7 +55,7 @@ coordinates mean somewhere else, so clear it and lay it out again.
 The same game as part of a world's scene, for a world built from editor
 code. `ShapeCourse.Build` (`Editor/World/ShapeCourse.cs`, namespace
 `Wirenook.ShapeCollector.World.Editor`) makes it out of the world
-behaviours of `net.wirenook.skill-checks`; the package has no world
+skill-check behaviours of `net.wirenook.contacts`; the package has no world
 behaviour of its own.
 
 ```csharp
@@ -100,7 +100,7 @@ ShapeCourseResult course = ShapeCourse.Build(root, options);
 It is synced as every skill check is: one owner decides, four values are
 sent when something changes, and a late joiner finds the shapes that were
 taken taken. There is no sign and there are no lanterns; show progress with
-skill-checks' outputs on `Taken` if you want them.
+a skill check's outputs on `Taken` if you want them.
 
 The world in
 [wirenook-world](https://github.com/CassidyPrather/wirenook-world) calls

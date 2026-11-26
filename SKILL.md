@@ -46,14 +46,14 @@ assembly that compiles only where its dependencies are installed
 that require them).
 
 - `Editor/Wirenook.ShapeCollector.Editor.asmdef` — the avatar side (`ShapeCollectorBuild.cs`). Needs `com.vrchat.avatars`, `nadena.dev.modular-avatar`, `net.wirenook.assets`, `net.wirenook.world-sync`.
-- `Editor/World/Wirenook.ShapeCollector.World.Editor.asmdef` — the world side (`ShapeCourse.cs`). Needs `com.vrchat.worlds` and `net.wirenook.skill-checks`. A nested asmdef: the files under `Editor/World/` belong to it and not to the avatar assembly above them.
+- `Editor/World/Wirenook.ShapeCollector.World.Editor.asmdef` — the world side (`ShapeCourse.cs`). Needs `com.vrchat.worlds` and `net.wirenook.contacts` (for its skill checks). A nested asmdef: the files under `Editor/World/` belong to it and not to the avatar assembly above them.
 - `Generated/`, `Models/`, `Prefabs/` — avatar assets. In a world project they import and are used by nothing; the prefab's avatar components are missing scripts there.
 - `package.json` depends on `com.vrchat.base` only. Do not add either SDK, or a package only one side uses, to `vpmDependencies`: the other target could then not install it.
 
 Rules:
 
 - **Neither side may reference the other, and nothing may sit outside the two fenced assemblies** that needs an SDK. A third assembly that both use has to be engine-free.
-- **The world side has no behaviour of its own.** A course is skill checks: each shape a latched check needing a body contact and the shape before it complete. If it needs something skill-checks cannot do, add it there.
+- **The world side has no behaviour of its own.** A course is skill checks: each shape a latched check needing a body contact and the shape before it complete. If it needs something skill checks cannot do, add it there (`net.wirenook.contacts`).
 - **`ShapeCourse.Build` does not know the caller's generator.** It makes objects only through `options.Node` and reports every component it adds in `Components`; keep it that way, or generators that sweep what they did not make will undo it.
 - **Compile the world side from the world project** (`modules/wirenook-world`: `scripts/world.sh all`), which references this package in place. This repository's own checks never compile it.
 
