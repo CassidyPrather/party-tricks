@@ -445,6 +445,7 @@ GameObject:
   - component: {fileID: 4352642049542132428}
   - component: {fileID: 4524693945840564975}
   - component: {fileID: 4489725250302260516}
+  - component: {fileID: 3902362810823485245}
   m_Layer: 0
   m_Name: Wirenook Away
   m_TagString: Untagged
@@ -591,3 +592,16 @@ MonoBehaviour:
   tag: afk animation
   tagPriority: 20
   joinAvatarMesh: 1
+--- !u!114 &3902362810823485245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8832829729335756670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1a09baab9b10e458da8c913dca0495, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flavour: crash

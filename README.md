@@ -22,7 +22,7 @@ and animator at build time. Each trick works on its own, and
 | `Wirenook Censor` | A mosaic over your head or your whole body, and only over you: always, only in mirrors, only in photos, in either, or only in a mirror that is in a photo. Needs the avatar's materials to mark the stencil; see below. | 8 | 1 mesh, 1 material slot, 1 constraint; one copy of the screen per camera while it shows |
 | `Wirenook Busy Sign` | A little window with three dots hovers by your head: you are looking at something nobody else can see. | 1 | none |
 | `Wirenook Away` | While you are away the avatar crashes: the body locks, the mesh glitches, an error window reading AFK stands beside it, a device-unplugged cue plays and a low buzz sets in. On VRChat's own AFK or an "AFK" menu switch. Not part of the Tricks set. | 1 | 1 audio source; about 170 triangles |
-| `Wirenook Away (Lite)` | The same without the window and the sounds. | 1 | none |
+| `Wirenook Away (Vanish)` | While you are away the avatar does the vanishing act, and undoes it when you are back. Needs `Wirenook Vanishing Act` (or the Tricks set) on the same avatar. Not part of the Tricks set. | 1 | none of its own |
 
 The hammer, the smoke and the busy sign are toggled by scaling a bone, so
 an optimiser such as
@@ -176,9 +176,30 @@ of its own, as cass does (its eyes go to a small error screen).
 On an avatar whose materials are not from `net.wirenook.assets` the body
 still locks and the sounds still play; nothing is drawn differently.
 
-`Wirenook Away (Lite)` leaves out the window and the sounds. It adds no
-mesh, material or audio source, only the animator layers and one synced
-bit, for an avatar that has no rank to spare.
+### Away, by vanishing
+
+`Wirenook Away (Vanish)` is another way of being away: the vanishing act,
+worked by your absence instead of by its switch. It starts on the same two
+things and adds the same "AFK" switch to the menu. The prefab holds that
+switch and one animator layer, which on your own client sets the vanishing
+act's parameter when you leave and clears it when you are back; the
+parameter is synced, so everyone sees the puff of smoke, the log left
+standing, and nobody there. It costs one synced bit and nothing else.
+
+It does nothing without `Wirenook Vanishing Act` on the same avatar (alone
+or in the Tricks set). The act's own switch goes on working beside it;
+coming back from being away brings back an avatar that was vanished by
+hand before.
+
+An avatar should have one way of being away. Each of the three (these two
+and `Wirenook Nap` in `net.wirenook.locomotion`) is marked with its flavour
+(`WirenookAfk`), and an avatar whose root names one (`WirenookAfkChoice`,
+`net.wirenook.assets`) is built with that one and without the others. An
+avatar that names none is built with whatever was dropped onto it.
+
+There was a `Wirenook Away (Lite)`, the crash without its window and
+sounds, for avatars with no rank to spare. The nap does that job now and
+the prefab is gone.
 
 **The switch cannot mute you.** VRChat lets an avatar read whether the
 microphone is muted and never change it. `tools/away_mic.py` is a small

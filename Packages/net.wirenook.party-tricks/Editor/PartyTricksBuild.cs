@@ -32,6 +32,7 @@ namespace Wirenook.PartyTricks.Editor
             Vanish();
             Busy();
             Away();
+            AwayVanish();
             Bundle();
             AssetDatabase.SaveAssets();
             Debug.Log("[party-tricks] Rebuilt prefabs and animators.");

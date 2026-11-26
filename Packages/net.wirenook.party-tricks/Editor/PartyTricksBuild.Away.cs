@@ -12,7 +12,7 @@ namespace Wirenook.PartyTricks.Editor
     public static partial class PartyTricksBuild
     {
         public const string AwayPrefab = Prefabs + "/Wirenook Away.prefab";
-        public const string AwayLitePrefab = Prefabs + "/Wirenook Away (Lite).prefab";
+        public const string AwayVanishPrefab = Prefabs + "/Wirenook Away (Vanish).prefab";
 
         /// <summary>
         /// The number of the error window among an avatar's signs (see
@@ -54,44 +54,30 @@ namespace Wirenook.PartyTricks.Editor
         /// (<see cref="WirenookAvatarMaterials"/>). On an avatar with other
         /// materials the body still locks and the sounds still play.
         ///
-        /// The lite prefab is the same without the window and the sounds:
-        /// nothing in it is a mesh, a material or an audio source.
+        /// It is one of three ways of being away (<see cref="WirenookAway"/>):
+        /// the crash. <see cref="AwayVanish"/> is another, and the nap of
+        /// net.wirenook.locomotion the third.
         /// </summary>
         public static void Away()
         {
-            Away(AwayPrefab, "away", lite: false);
-            Away(AwayLitePrefab, "away-lite", lite: true);
-        }
-
-        private static void Away(string prefab, string name, bool lite)
-        {
+            const string name = "away";
             var action = AwayAction(name);
-            FeaturePrefab.Edit(prefab, root =>
+            FeaturePrefab.Edit(AwayPrefab, root =>
             {
                 var materials = FeaturePrefab.AvatarMaterials(root);
 
-                var window = root.transform.Find("Window");
-                if (lite)
-                {
-                    if (window != null) Object.DestroyImmediate(window.gameObject);
-                    var sound = root.transform.Find(WirenookSounds.SourceName);
-                    if (sound != null) Object.DestroyImmediate(sound.gameObject);
-                }
-                else
-                {
-                    // A second material on the avatar's mesh, which Android
-                    // and iOS have no room for; nothing there could unfold it
-                    // anyway, without the shader.
-                    var holder = FeaturePrefab.Child(root, "Window");
-                    FeaturePrefab.Ensure<WirenookPcOnly>(holder);
-                    var mount = FeaturePrefab.Child(holder, "Mount");
-                    AttachUpright(mount, HumanBodyBones.Hips);
-                    AwayWindow().Place(mount, "Pivot", Generated + "/away-window.asset")
-                        // Chest height on a figure about 1.7 m tall; it scales with the avatar.
-                        .transform.localPosition = new Vector3(0f, 0.3f, 0f);
-                    // A loop, which a cue from another feature would cut off for good.
-                    WirenookSounds.Source(root, shared: false);
-                }
+                // A second material on the avatar's mesh, which Android
+                // and iOS have no room for; nothing there could unfold it
+                // anyway, without the shader.
+                var holder = FeaturePrefab.Child(root, "Window");
+                FeaturePrefab.Ensure<WirenookPcOnly>(holder);
+                var mount = FeaturePrefab.Child(holder, "Mount");
+                AttachUpright(mount, HumanBodyBones.Hips);
+                AwayWindow().Place(mount, "Pivot", Generated + "/away-window.asset")
+                    // Chest height on a figure about 1.7 m tall; it scales with the avatar.
+                    .transform.localPosition = new Vector3(0f, 0.3f, 0f);
+                // A loop, which a cue from another feature would cut off for good.
+                WirenookSounds.Source(root, shared: false);
 
                 var fx = ControllerBuilder.Rebuild(Generated + "/" + name + "-fx.controller");
                 fx.Bool(WirenookSignals.Afk).Bool(WirenookSignals.Away);
@@ -100,12 +86,9 @@ namespace Wirenook.PartyTricks.Editor
                     fx.Clip(name + " " + phase, clip =>
                     {
                         clip.Material<SkinnedMeshRenderer>(materials, ToonMaterial.Glitch, glitch)
-                            .Material<SkinnedMeshRenderer>(materials, ToonMaterial.Screen, screen);
-                        if (!lite)
-                        {
-                            clip.Material<SkinnedMeshRenderer>(materials, ToonMaterial.Sign, AnimationCurve.Constant(0f, seconds, show == null ? 0f : AwaySign))
-                                .Material<SkinnedMeshRenderer>(materials, ToonMaterial.SignShow, show ?? AnimationCurve.Constant(0f, seconds, 0f));
-                        }
+                            .Material<SkinnedMeshRenderer>(materials, ToonMaterial.Screen, screen)
+                            .Material<SkinnedMeshRenderer>(materials, ToonMaterial.Sign, AnimationCurve.Constant(0f, seconds, show == null ? 0f : AwaySign))
+                            .Material<SkinnedMeshRenderer>(materials, ToonMaterial.SignShow, show ?? AnimationCurve.Constant(0f, seconds, 0f));
 
                         if (loop) clip.Loop();
                     });
@@ -131,12 +114,9 @@ namespace Wirenook.PartyTricks.Editor
                     Stepped((0f, 1f), (0.3f, 0f), (AwayReturnSeconds, 0f)),
                     Padded(PopToggle.Overshoot(1f, 0f, PopToggle.DisappearSeconds), AwayReturnSeconds)));
 
-                if (!lite)
-                {
-                    WirenookSounds.PlayOnEnter(leaving, WirenookSounds.SourceName, "unplug");
-                    WirenookSounds.PlayOnEnter(gone, WirenookSounds.SourceName, "buzz", loop: true);
-                    WirenookSounds.PlayOnEnter(returning, WirenookSounds.SourceName, "plug");
-                }
+                WirenookSounds.PlayOnEnter(leaving, WirenookSounds.SourceName, "unplug");
+                WirenookSounds.PlayOnEnter(gone, WirenookSounds.SourceName, "buzz", loop: true);
+                WirenookSounds.PlayOnEnter(returning, WirenookSounds.SourceName, "plug");
 
                 here.To(leaving).IfTrue(WirenookSignals.Afk).Or().IfTrue(WirenookSignals.Away);
                 leaving.To(gone).AfterTime(1f);
@@ -156,11 +136,71 @@ namespace Wirenook.PartyTricks.Editor
                 merge.deleteAttachedAnimator = false;
 
                 FeaturePrefab.Parameters(root, FeaturePrefab.SyncedBool(WirenookSignals.Away));
-                FeaturePrefab.InstallMenu(root);
-                FeaturePrefab.MenuToggle(root, "AFK", "away", WirenookSignals.Away);
-                FeaturePrefab.Describe(root, "away", "Crash while away", "away", "afk animation", 20, joinAvatarMesh: !lite);
+                WirenookAway.Menu(root);
+                WirenookAway.Mark(root, WirenookAway.Crash);
+                FeaturePrefab.Describe(root, "away", "Crash while away", "away", "afk animation", 20, joinAvatarMesh: true);
             });
         }
+
+        /// <summary>
+        /// Another way of being away: the avatar vanishes. It is the
+        /// vanishing act (<see cref="Vanish"/>) worked by the wearer's
+        /// absence instead of by its menu switch: a puff of smoke, a log
+        /// left standing where the wearer was, and nobody there until they
+        /// are back, when it all happens the other way.
+        ///
+        /// None of that is in this prefab. It holds a switch and one layer,
+        /// which on the wearer's own client sets the vanishing act's
+        /// parameter on leaving and clears it on coming back; the parameter
+        /// is synced, so everyone sees the act. It therefore needs
+        /// <c>Wirenook Vanishing Act</c> (or the whole set of tricks) on the
+        /// same avatar and does nothing without it. The act's own menu
+        /// switch goes on working; coming back from being away un-vanishes
+        /// an avatar that was vanished by hand before.
+        /// </summary>
+        public static void AwayVanish()
+        {
+            FeaturePrefab.Edit(AwayVanishPrefab, root =>
+            {
+                var fx = ControllerBuilder.Rebuild(Generated + "/away-vanish-fx.controller");
+                fx.Bool(WirenookSignals.Afk).Bool(WirenookSignals.Away);
+
+                void Set(StateBuilder state, bool vanished) => state.Behaviour<VRCAvatarParameterDriver>(driver =>
+                {
+                    // The wearer's client alone: the parameter it sets is synced.
+                    driver.localOnly = true;
+                    driver.parameters = new System.Collections.Generic.List<VRC_AvatarParameterDriver.Parameter>
+                    {
+                        new VRC_AvatarParameterDriver.Parameter
+                        {
+                            type = VRC_AvatarParameterDriver.ChangeType.Set, name = VanishParameter, value = vanished ? 1f : 0f,
+                        },
+                    };
+                });
+
+                // Nothing is set on the way into Here, which is also where
+                // the layer starts: an avatar that loads vanished stays so.
+                var layer = fx.Layer(AwayVanishLayer);
+                var here = layer.State("Here");
+                var gone = layer.State("Gone");
+                var back = layer.State("Back");
+                Set(gone, true);
+                Set(back, false);
+                here.To(gone).IfTrue(WirenookSignals.Afk).Or().IfTrue(WirenookSignals.Away);
+                gone.To(back).IfFalse(WirenookSignals.Afk).IfFalse(WirenookSignals.Away);
+                back.To(here).AfterTime(0f);
+                fx.Save();
+                FeaturePrefab.Merge(root, fx.Controller);
+
+                FeaturePrefab.Parameters(root, FeaturePrefab.SyncedBool(WirenookSignals.Away));
+                WirenookAway.Menu(root);
+                WirenookAway.Mark(root, WirenookAway.Vanish);
+                FeaturePrefab.Describe(root, "away-vanish", "Vanish while away", "away", "afk animation", 20);
+            });
+        }
+
+        /// <summary>The name of the layer that works the vanishing act while away; checks look for it.</summary>
+        public const string AwayVanishLayer = "Away Vanish";
 
         /// <summary>
         /// The body's part, for the Action playable layer: while away it
@@ -215,27 +255,7 @@ namespace Wirenook.PartyTricks.Editor
         /// <summary>Hands the whole body to animation and stops locomotion, or hands it all back.</summary>
         private static void Lock(StateBuilder state, bool locked)
         {
-            var tracking = locked ? VRC_AnimatorTrackingControl.TrackingType.Animation : VRC_AnimatorTrackingControl.TrackingType.Tracking;
-            state.Behaviour<VRCAnimatorTrackingControl>(control =>
-            {
-                control.trackingHead = tracking;
-                control.trackingLeftHand = tracking;
-                control.trackingRightHand = tracking;
-                control.trackingHip = tracking;
-                control.trackingLeftFoot = tracking;
-                control.trackingRightFoot = tracking;
-                control.trackingLeftFingers = tracking;
-                control.trackingRightFingers = tracking;
-                control.trackingEyes = tracking;
-                control.trackingMouth = tracking;
-            });
-            state.Behaviour<VRCAnimatorLocomotionControl>(control => control.disableLocomotion = locked);
-            state.Behaviour<VRCPlayableLayerControl>(control =>
-            {
-                control.layer = VRC_PlayableLayerControl.BlendableLayer.Action;
-                control.goalWeight = locked ? 1f : 0f;
-                control.blendDuration = locked ? 0.2f : 0.25f;
-            });
+            WirenookAway.HandOver(state, locked, locked ? 0.2f : 0.25f);
         }
 
         /// <summary>Sets the weight of one of the Action controller's own layers. Modular Avatar moves the index along when it merges.</summary>
