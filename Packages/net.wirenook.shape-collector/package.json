@@ -3,7 +3,7 @@
   "displayName": "Wirenook Shape Collector",
   "version": "0.1.0",
   "unity": "2022.3",
-  "description": "Lay out a collect-the-shapes course in any VRChat world from your avatar: three shapes, a gate and a sign, placed where you stand and synced for everyone.",
+  "description": "A collect-the-shapes course for VRChat, for both targets: laid out from an avatar in any world, or built into a world from code. Three shapes, a gate; taken in order.",
   "author": {
     "name": "Cassidy Prather",
     "email": "cassidy@wirenook.net",
@@ -11,10 +11,7 @@
   },
   "license": "AGPL-3.0-or-later",
   "vpmDependencies": {
-    "com.vrchat.avatars": "^3.10.6",
-    "nadena.dev.modular-avatar": "^1.18.7",
-    "net.wirenook.assets": "^0.1.0",
-    "net.wirenook.world-sync": "^0.1.0"
+    "com.vrchat.base": "^3.10.6"
   },
   "url": "https://github.com/CassidyPrather/shape-collector"
 }

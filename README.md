@@ -11,10 +11,18 @@ of each gatepost. When the ball is taken the gate goes away. The gate has
 no collider, so nothing stops anyone walking through it; you can pretend it
 does, if that makes you happy.
 
-Package: `net.wirenook.shape-collector`. Needs the VRChat Avatars SDK
-3.10.6 or newer, [Modular Avatar](https://modular-avatar.nadena.dev/),
-[`net.wirenook.assets`](https://github.com/CassidyPrather/wirenook-assets)
-and [`net.wirenook.world-sync`](https://github.com/CassidyPrather/world-sync).
+Package: `net.wirenook.shape-collector`. It is one package for two
+targets, and each side compiles only where what it needs is installed:
+
+| Side | Folder | Needs |
+| --- | --- | --- |
+| On an avatar: the course laid out from a menu | `Editor/` (`ShapeCollectorBuild`), `Generated/`, `Models/`, `Prefabs/` | VRChat Avatars SDK 3.10.6 or newer, [Modular Avatar](https://modular-avatar.nadena.dev/), [`net.wirenook.assets`](https://github.com/CassidyPrather/wirenook-assets), [`net.wirenook.world-sync`](https://github.com/CassidyPrather/world-sync) |
+| In a world: the course built into the scene | `Editor/World/` (`ShapeCourse`) | VRChat Worlds SDK 3.7 or newer, [`net.wirenook.skill-checks`](https://github.com/CassidyPrather/skill-checks) |
+
+`package.json` therefore depends on `com.vrchat.base` alone: the Avatars
+and Worlds SDKs cannot share a project, so a package for both cannot
+require either. Install the row you want yourself. With neither row
+installed the package imports and does nothing.
 
 **A pilot.** This package exists as much to put the world-sync bus under
 load as to be played, and none of it has run in the VRChat client. See
@@ -41,6 +49,65 @@ measured; stand still for it. When the course looks right, open it.
 The layout is kept with the avatar: it is still there the next time you
 wear it, in the same places in the same world. In another world the same
 coordinates mean somewhere else, so clear it and lay it out again.
+
+## In a world
+
+The same game as part of a world's scene, for a world built from editor
+code. `ShapeCourse.Build` (`Editor/World/ShapeCourse.cs`, namespace
+`Wirenook.ShapeCollector.World.Editor`) makes it out of the world
+behaviours of `net.wirenook.skill-checks`; the package has no world
+behaviour of its own.
+
+```csharp
+var options = new ShapeCourseOptions
+{
+    Gate = new[] { bars },          // objects that bar the way until the last shape is taken
+    StartOver = button,             // something with a collider; becomes the "start over" control
+};
+options.Shapes.Add(new ShapeCourseShape("Pyramid", new Vector3(-2.5f, 0f, 0f), shown => AddPyramidMesh(shown)));
+options.Shapes.Add(new ShapeCourseShape("Cube", Vector3.zero, shown => AddCubeMesh(shown)));
+options.Shapes.Add(new ShapeCourseShape("Ball", new Vector3(2.5f, 0f, 0f), shown => AddBallMesh(shown)));
+
+ShapeCourseResult course = ShapeCourse.Build(root, options);
+```
+
+- **Each shape is a skill check** that completes at a touch and stays
+  complete, and that needs two things: a contact carrying one of
+  `options.Tags` (by default `Head`, `Torso`, `Hand`, `Foot`, `Finger`,
+  the senders every avatar has, as on the avatar side), and the shape
+  before it to be complete. So only the next shape counts.
+- **Only the next shape is on show.** What you add in a shape's `Make` is
+  shown from when the shape before is taken until it is taken itself.
+- **The gate**: `options.Gate` are shown until the last shape is taken,
+  `options.Open` from then on. Unlike the avatar's gate, one made of
+  objects with colliders does stop people.
+- **Start over**: pressing `options.StartOver` resets every shape, for
+  everyone.
+- **`options.MasterTags`**: contact tags that take a shape out of turn or
+  put a taken one back, for whoever runs the game.
+- **`options.Feedback`** is called for each shape with the object its
+  check is on and the check: the place to add a sound.
+- **`options.Node`** is how the course finds or makes its own objects under
+  the root (per shape: an object of the shape's name holding `Check`,
+  `Turn`, `Turn/Shape` and two switches). A generator that tracks what it
+  made passes its own; the default finds a child by name or creates it, so
+  building twice changes nothing.
+- **The result**: `Taken` (the check of each shape; the last one being
+  complete is the gate being open), `Spots` (each shape's object, to add a
+  mark on the ground to), and `Components` (everything the course put on
+  any object, for generators that remove what they did not make).
+
+It is synced as every skill check is: one owner decides, four values are
+sent when something changes, and a late joiner finds the shapes that were
+taken taken. There is no sign and there are no lanterns; show progress with
+skill-checks' outputs on `Taken` if you want them.
+
+The world in
+[wirenook-world](https://github.com/CassidyPrather/wirenook-world) calls
+it for its shape course, and its play tests cover it: a touch out of turn
+takes nothing, each shape appears in turn and goes when touched, the gate
+opens after the ball, and starting over puts the first shape and the gate
+back.
 
 ## How it works
 

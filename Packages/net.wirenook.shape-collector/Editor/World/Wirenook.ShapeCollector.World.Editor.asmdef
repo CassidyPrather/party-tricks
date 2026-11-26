@@ -1,0 +1,37 @@
+{
+    "name": "Wirenook.ShapeCollector.World.Editor",
+    "rootNamespace": "Wirenook.ShapeCollector.World.Editor",
+    "references": [
+        "Wirenook.SkillChecks.Core",
+        "Wirenook.SkillChecks.World",
+        "Wirenook.SkillChecks.World.Editor",
+        "UdonSharp.Runtime",
+        "UdonSharp.Editor",
+        "VRC.Udon"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "WIRENOOK_VRC_WORLDS",
+        "WIRENOOK_SKILL_CHECKS"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.vrchat.worlds",
+            "expression": "3.7.0",
+            "define": "WIRENOOK_VRC_WORLDS"
+        },
+        {
+            "name": "net.wirenook.skill-checks",
+            "expression": "0.1.0",
+            "define": "WIRENOOK_SKILL_CHECKS"
+        }
+    ],
+    "noEngineReferences": false
+}

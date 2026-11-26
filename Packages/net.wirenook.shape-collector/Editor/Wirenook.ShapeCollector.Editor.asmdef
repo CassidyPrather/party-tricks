@@ -16,7 +16,33 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
+    "defineConstraints": [
+        "WIRENOOK_VRC_AVATARS",
+        "WIRENOOK_MODULAR_AVATAR",
+        "WIRENOOK_ASSETS",
+        "WIRENOOK_WORLD_SYNC"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.vrchat.avatars",
+            "expression": "3.7.0",
+            "define": "WIRENOOK_VRC_AVATARS"
+        },
+        {
+            "name": "nadena.dev.modular-avatar",
+            "expression": "1.0.0",
+            "define": "WIRENOOK_MODULAR_AVATAR"
+        },
+        {
+            "name": "net.wirenook.assets",
+            "expression": "0.1.0",
+            "define": "WIRENOOK_ASSETS"
+        },
+        {
+            "name": "net.wirenook.world-sync",
+            "expression": "0.1.0",
+            "define": "WIRENOOK_WORLD_SYNC"
+        }
+    ],
     "noEngineReferences": false
 }
