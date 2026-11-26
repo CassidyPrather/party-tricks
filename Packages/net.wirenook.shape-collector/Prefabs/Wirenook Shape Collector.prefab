@@ -2221,6 +2221,7 @@ GameObject:
   - component: {fileID: 8503249836229829838}
   - component: {fileID: 5232149381393620150}
   - component: {fileID: 5990070980069169583}
+  - component: {fileID: 7917816929034547400}
   m_Layer: 0
   m_Name: SFX
   m_TagString: Untagged
@@ -2357,6 +2358,18 @@ MonoBehaviour:
   VolumetricRadius: 0
   EnableSpatialization: 1
   UseAudioSourceVolumeCurve: 0
+--- !u!114 &7917816929034547400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7148866987926094610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bf860201cc272b4b89376bddab05b20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7184237731857373811
 GameObject:
   m_ObjectHideFlags: 0
