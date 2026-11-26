@@ -1,7 +1,8 @@
 # Wirenook Party Tricks
 
 Things a VRChat avatar does for the people around it: a mallet that goes
-bonk, a vanishing act, a mosaic censor, and a sign for when you are busy.
+bonk, a vanishing act, a mosaic censor, a sign for when you are busy, and
+a crash for when you are away.
 
 Package: `net.wirenook.party-tricks`. Needs the VRChat Avatars SDK 3.10.6
 or newer, [Modular Avatar](https://modular-avatar.nadena.dev/),
@@ -20,6 +21,8 @@ and animator at build time. Each trick works on its own, and
 | `Wirenook Vanishing Act` | You go up in a puff of smoke and a log is left standing where you were. You stay hidden, free to walk off, until you switch it off and come back in another puff. | 67 | 1 mesh, 1 material slot, 1 audio source, constraints and contacts (see `net.wirenook.world-sync`) |
 | `Wirenook Censor` | A mosaic over your head or your whole body, and only over you: always, only in mirrors, only in photos, in either, or only in a mirror that is in a photo. Needs the avatar's materials to mark the stencil; see below. | 8 | 1 mesh, 1 material slot, 1 constraint; one copy of the screen per camera while it shows |
 | `Wirenook Busy Sign` | A little window with three dots hovers by your head: you are looking at something nobody else can see. | 1 | none |
+| `Wirenook Away` | While you are away the avatar crashes: the body locks, the mesh glitches, an error window reading AFK stands beside it, a device-unplugged cue plays and a low buzz sets in. On VRChat's own AFK or an "AFK" menu switch. Not part of the Tricks set. | 1 | 1 audio source; about 170 triangles |
+| `Wirenook Away (Lite)` | The same without the window and the sounds. | 1 | none |
 
 The hammer, the smoke and the busy sign are toggled by scaling a bone, so
 an optimiser such as
@@ -136,11 +139,64 @@ ordinary synced parameter, which also makes it settable over
 `/avatar/parameters/WN/Busy`: a program that knows when an overlay is up
 can raise the sign for you. This package does not include one.
 
+### Away
+
+`Wirenook Away` is what the avatar does while its wearer is not there. It
+starts on either of two things: VRChat's own `AFK` (a headset taken off,
+the system menu, the End key) or the "AFK" switch it adds to the menu,
+`WN/Away`. Then:
+
+- **The body locks.** Every tracked part is handed from tracking to
+  animation and locomotion is switched off, so the avatar stands where it
+  was left, in VRChat's standing pose held dead still, instead of slumping
+  after a headset on a desk. Once every six seconds it flicks to a T-pose
+  for an eighth of a second.
+- **The mesh glitches.** Level slices of the figure tear sideways, the
+  whole surface snaps to a coarse grid in bursts, and a vertex in a few
+  hundred is thrown out as a spike, re-rolled eleven times a second: hard
+  as you leave, a simmer with one jolt each time round while you are gone,
+  hard again as you come back.
+- **A window says why.** A desktop error box reading AFK stands 30 cm out
+  from your chest on the side of whoever is looking, facing them. Each
+  viewer has it on their own side, and it folds away for anyone standing
+  inside the avatar, which keeps it out of your own face.
+- **It sounds like a device coming unplugged**: two notes down as you go,
+  a low mains buzz while you are gone, the two notes back up on return.
+
+The glitch and the window are drawn by the avatar's own material, not by
+anything this prefab adds: the shader `net.wirenook.assets` generates its
+materials with (`Wirenook/lilToon`) has a glitch amount and can unfold
+"signs", and the prefab animates those properties on a stand-in for every
+renderer of the avatar, which the build resolves to the real ones. The
+window is 170 triangles of the avatar's own mesh in palette colours, so it
+costs no mesh and no material slot; folded away it is not even a speck.
+The avatar's own animator may read `WN/Away` beside `AFK` to add something
+of its own, as cass does (its eyes go to a small error screen).
+
+On an avatar whose materials are not from `net.wirenook.assets` the body
+still locks and the sounds still play; nothing is drawn differently.
+
+`Wirenook Away (Lite)` leaves out the window and the sounds. It adds no
+mesh, material or audio source, only the animator layers and one synced
+bit, for an avatar that has no rank to spare.
+
+**The switch cannot mute you.** VRChat lets an avatar read whether the
+microphone is muted and never change it. `tools/away_mic.py` is a small
+program to run beside VRChat (with OSC enabled) that does it from outside:
+it presses the voice button when the switch goes on, and again when it
+goes off, but only if the mute was its own, was seen to take, and nothing
+has touched the microphone since. Mute or unmute by hand while away and it
+leaves the microphone as you set it. It needs "Toggle Voice" on in
+VRChat's audio settings. `tools/away_mic.py --test` checks those rules
+without VRChat.
+
 ### Android and iOS
 
 In a build for Android or iOS (see `net.wirenook.assets`), the censor is
 left out: it is drawn by a custom shader, which mobile avatars may not use.
-The rest is kept, with VRChat's mobile shaders and without sound.
+The rest is kept, with VRChat's mobile shaders and without sound. Of the
+away feature that leaves the locked body: the glitch and the window are
+the shader's, and the window is taken out of the mesh altogether there.
 
 ## Limits and unknowns
 
@@ -159,6 +215,15 @@ The rest is kept, with VRChat's mobile shaders and without sound.
   and whether VRChat's mirrors and cameras keep a stencil buffer, and how
   other avatars' stencil effects mix with it, can only be seen in the
   client.
+- The away feature was rendered in the editor with its properties set by
+  hand (the glitch, the window from every camera, the screen on cass's
+  eyes), and its layers were read back from a built avatar. Nothing has
+  seen the body lock: whether the pose holds against VRChat's own AFK
+  handling when the menu switch outlives it, how the T-pose flick reads,
+  and whether the lock is comfortable to come back into in a headset. How
+  loud the buzz is against a room is unheard. The spikes reach about 40 cm
+  from the body at their worst; whether that is too much in a crowd is a
+  matter of taste, and the number is `wirenookGlitch` in the shader.
 - Avatar Optimizer dropped the hammer's burst animation when the burst's
   bone was scaled only by the hit layer. Scaling it from the layer that
   toggles the mallet as well keeps it. The cause was not tracked down.
