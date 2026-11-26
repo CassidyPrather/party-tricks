@@ -57,6 +57,11 @@ namespace Wirenook.PartyTricks.Editor
                 // The handle lies across the palm rather than a little way
                 // out along the fingers.
                 fit.alongFingers = 0.05f;
+                // A fist round a thin handle.
+                fit.held = new List<WirenookHeldWhen> { WirenookHeldWhen.On(parameter) };
+                fit.curl = 0.8f;
+                fit.indexCurl = 0.8f;
+                fit.thumbCurl = 0.85f;
 
                 // A grip points a tool where the fingers point, with its top
                 // to the back of the hand. A hammer's handle runs out of the

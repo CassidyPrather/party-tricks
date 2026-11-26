@@ -167,6 +167,14 @@ MonoBehaviour:
   hand: 18
   alongFingers: 0.05
   intoPalm: 0.03
+  held:
+  - parameter: WN/Hammer
+    isInt: 0
+    value: 0
+    not: 0
+  curl: 0.8
+  indexCurl: 0.8
+  thumbCurl: 0.85
 --- !u!1 &6726105272019119030
 GameObject:
   m_ObjectHideFlags: 0
