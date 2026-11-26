@@ -89,7 +89,8 @@ namespace Wirenook.PartyTricks.Editor
                     AwayWindow().Place(mount, "Pivot", Generated + "/away-window.asset")
                         // Chest height on a figure about 1.7 m tall; it scales with the avatar.
                         .transform.localPosition = new Vector3(0f, 0.3f, 0f);
-                    WirenookSounds.Source(root);
+                    // A loop, which a cue from another feature would cut off for good.
+                    WirenookSounds.Source(root, shared: false);
                 }
 
                 var fx = ControllerBuilder.Rebuild(Generated + "/" + name + "-fx.controller");
