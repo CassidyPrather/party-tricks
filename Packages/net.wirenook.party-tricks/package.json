@@ -1,7 +1,7 @@
 {
   "name": "net.wirenook.party-tricks",
   "displayName": "Wirenook Party Tricks",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "unity": "2022.3",
   "description": "Things a VRChat avatar does for the people around it: a mosaic censor, a bonk hammer, a vanishing act and more. Also the shape collector: a collect-the-shapes course to lay out in any world from the avatar.",
   "author": {
@@ -13,8 +13,8 @@
   "vpmDependencies": {
     "com.vrchat.avatars": "^3.10.6",
     "nadena.dev.modular-avatar": "^1.18.7",
-    "net.wirenook.assets": "^0.2.0",
-    "net.wirenook.world-sync": "^0.2.0"
+    "net.wirenook.assets": "^0.2.1",
+    "net.wirenook.world-sync": "^0.2.1"
   },
   "url": "https://github.com/CassidyPrather/party-tricks",
   "documentationUrl": "https://github.com/CassidyPrather/party-tricks#readme",
